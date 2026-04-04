@@ -1,5 +1,6 @@
 import { OutputFormatter, OutputFormat } from './types';
 import { Property } from '../types/types';
+import { htmlToOrg } from 'html-to-org';
 
 /**
  * Org-mode formatter — converts content to Org syntax
@@ -15,15 +16,7 @@ export const orgFormatter: OutputFormatter = {
   format: 'org' as OutputFormat,
 
   formatContent(html: string, url: string): string {
-    // Will be implemented when html-to-org is integrated
-    // For now, return HTML as-is (degraded mode)
-    try {
-      // Lazy import to avoid hard dependency during initial setup
-      const { htmlToOrg } = require('html-to-org');
-      return htmlToOrg(html, url);
-    } catch {
-      return html;
-    }
+    return htmlToOrg(html, url);
   },
 
   formatMeta(properties: Property[], propertyTypes: Record<string, string>): string {
