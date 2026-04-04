@@ -9,6 +9,8 @@ export interface Template {
 	triggers?: string[];
 	vault?: string;
 	context?: string;
+	/** Output format: 'md' for Markdown (default), 'org' for Org-mode */
+	outputFormat?: 'md' | 'org';
 }
 
 export interface Property {

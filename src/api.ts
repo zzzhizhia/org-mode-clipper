@@ -3,13 +3,13 @@
 // The caller provides a DocumentParser for their environment.
 
 import DefuddleClass from 'defuddle';
-import { createMarkdownContent } from 'defuddle/full';
 import { compileTemplate, SelectorProcessor } from './utils/template-compiler';
 import { AsyncResolver, RenderContext } from './utils/renderer';
 import { applyFilters } from './utils/filters';
-import { buildVariables, generateFrontmatter, extractContentBySelector, selectorContentToString, formatPropertyValue } from './utils/shared';
+import { buildVariables, extractContentBySelector, selectorContentToString, formatPropertyValue } from './utils/shared';
 import { sanitizeFileName } from './utils/string-utils';
 import { Template, Property } from './types/types';
+import { getFormatter } from './formatters';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -185,14 +185,15 @@ export async function clip(options: ClipOptions): Promise<ClipResult> {
 	const defuddle = new DefuddleClass(documentElement as unknown as Document, { url });
 	const defuddleResult = defuddle.parse();
 
-	// Convert to markdown
-	const markdownContent = createMarkdownContent(defuddleResult.content, url);
+	// Convert content to target format
+	const formatter = getFormatter(template.outputFormat);
+	const formattedContent = formatter.formatContent(defuddleResult.content, url);
 
 	// Build template variables
 	const variables = buildVariables({
 		title: defuddleResult.title,
 		author: defuddleResult.author,
-		content: markdownContent,
+		content: formattedContent,
 		contentHtml: defuddleResult.content,
 		url,
 		fullHtml: html,
@@ -240,8 +241,8 @@ export async function clip(options: ClipOptions): Promise<ClipResult> {
 		Object.assign(typeMap, propertyTypes);
 	}
 
-	// Generate frontmatter
-	const frontmatter = generateFrontmatter(compiledProperties, typeMap);
+	// Generate metadata block (YAML frontmatter or org property drawer)
+	const frontmatter = formatter.formatMeta(compiledProperties, typeMap);
 
 	// Compile note content
 	const content = await compile(template.noteContentFormat);
