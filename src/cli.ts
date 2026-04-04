@@ -21,6 +21,7 @@ interface CliArgs {
 	uri: boolean;
 	propertyTypesPath?: string;
 	htmlPath?: string;
+	format?: string;
 }
 
 function printUsage(): void {
@@ -37,6 +38,7 @@ Options:
       --uri                    Use URI scheme instead of Obsidian CLI
       --silent                 Suppress Obsidian focus (URI mode)
       --property-types <path>  JSON mapping property names to types
+      --format <format>          Force output format (md, org). Overrides template setting
   -h, --help                   Show this help message
 `.trim();
 	console.log(usage);
@@ -53,6 +55,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let uri = false;
 	let propertyTypesPath: string | undefined;
 	let htmlPath: string | undefined;
+	let format: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -93,6 +96,10 @@ function parseArgs(argv: string[]): CliArgs {
 				if (i + 1 >= args.length) { console.error('Error: --property-types requires a value'); process.exit(1); }
 				propertyTypesPath = args[++i];
 				break;
+			case '--format':
+				if (i + 1 >= args.length) { console.error('Error: --format requires a value'); process.exit(1); }
+				format = args[++i];
+				break;
 			default:
 				if (!arg.startsWith('-') && !url) {
 					url = arg;
@@ -116,7 +123,7 @@ function parseArgs(argv: string[]): CliArgs {
 		process.exit(1);
 	}
 
-	return { url, templatePath, outputPath, vault, open, silent, uri, propertyTypesPath, htmlPath };
+	return { url, templatePath, outputPath, vault, open, silent, uri, propertyTypesPath, htmlPath, format };
 }
 
 // ---------------------------------------------------------------------------
@@ -225,6 +232,11 @@ async function main(): Promise<void> {
 	if (!template) {
 		console.error('Error: No template resolved');
 		process.exit(1);
+	}
+
+	// Apply --format override if provided
+	if (args.format) {
+		template.outputFormat = args.format as 'md' | 'org';
 	}
 
 	// Call the API (reuse pre-parsed document if available)
