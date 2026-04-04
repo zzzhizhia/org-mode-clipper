@@ -23,6 +23,7 @@ import { sanitizeFileName } from '../utils/string-utils';
 import { saveFile } from '../utils/file-utils';
 import { translatePage, getMessage, setupLanguageAndDirection } from '../utils/i18n';
 import { formatPropertyValue } from '../utils/shared';
+import { getFormatter } from '../formatters';
 
 interface ReaderModeResponse {
 	success: boolean;
@@ -52,13 +53,22 @@ const memoizedCompileTemplate = memoizeWithExpiration(
 	}
 );
 
-// Memoize generateFrontmatter with a longer expiration
-const memoizedGenerateFrontmatter = memoizeWithExpiration(
-	async (properties: Property[]) => {
-		return generateFrontmatter(properties);
-	},
-	{ expirationMs: 5000 }
-);
+/**
+ * Generate metadata block using the current template's output format.
+ * Uses formatter layer to dispatch to YAML frontmatter or org property drawer.
+ */
+async function generateMeta(properties: Property[]): Promise<string> {
+	const format = currentTemplate?.outputFormat || 'md';
+	if (format === 'org') {
+		const formatter = getFormatter('org');
+		const typeMap: Record<string, string> = {};
+		for (const pt of generalSettings.propertyTypes) {
+			typeMap[pt.name] = pt.type;
+		}
+		return formatter.formatMeta(properties, typeMap);
+	}
+	return generateMeta(properties);
+}
 
 function getPropertiesFromDOM(): Property[] {
 	return Array.from(document.querySelectorAll('.metadata-property input')).map(input => {
@@ -429,9 +439,9 @@ function setupEventListeners(tabId: number) {
 			const properties = getPropertiesFromDOM();
 
 			const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
-			const frontmatter = await generateFrontmatter(properties);
+			const frontmatter = await generateMeta(properties);
 			const fileContent = frontmatter + noteContentField.value;
-			
+
 			await copyToClipboard(fileContent);
 		});
 	}
@@ -451,7 +461,7 @@ function setupEventListeners(tabId: number) {
 				
 				// Use Promise.all to prepare the data
 				Promise.all([
-					generateFrontmatter(properties),
+					generateMeta(properties),
 					Promise.resolve(noteContentField.value)
 				]).then(([frontmatter, noteContent]) => {
 					const fileContent = frontmatter + noteContent;
@@ -460,8 +470,9 @@ function setupEventListeners(tabId: number) {
 					const noteNameField = document.getElementById('note-name-field') as HTMLInputElement;
 					let fileName = noteNameField?.value || 'untitled';
 					fileName = sanitizeFileName(fileName);
-					if (!fileName.toLowerCase().endsWith('.md')) {
-						fileName += '.md';
+					const ext = currentTemplate?.outputFormat === 'org' ? '.org' : '.md';
+					if (!fileName.toLowerCase().endsWith(ext)) {
+						fileName += ext;
 					}
 
 					if (navigator.share && navigator.canShare) {
@@ -837,10 +848,25 @@ function buildTemplateFieldsSkeleton(template: Template | null) {
 	}
 }
 
+// Cache for org-converted content to avoid re-conversion on template switch
+let cachedOrgContent: string | null = null;
+
 async function fillTemplateFieldValues(currentTabId: number, template: Template | null, variables: { [key: string]: string }, schemaOrgData?: any) {
 	if (!template) return;
 
 	const currentUrl = currentTabId ? (await getTabInfo(currentTabId)).url || '' : '';
+
+	// Re-compute {{content}} based on template's output format
+	const format = template.outputFormat || 'md';
+	if (format !== 'md' && variables['{{contentHtml}}']) {
+		if (!cachedOrgContent) {
+			const formatter = getFormatter(format);
+			cachedOrgContent = formatter.formatContent(variables['{{contentHtml}}'], currentUrl);
+		}
+		variables = { ...variables, '{{content}}': cachedOrgContent };
+	} else if (format === 'md' && variables['{{content}}']) {
+		// For MD, use original content (already computed as markdown)
+	}
 
 	currentVariables = variables;
 
@@ -1178,7 +1204,7 @@ async function handleSaveToDownloads() {
 		const properties = getPropertiesFromDOM();
 
 		const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
-		const frontmatter = await generateFrontmatter(properties);
+		const frontmatter = await generateMeta(properties);
 		const fileContent = frontmatter + noteContentField.value;
 
 		await saveFile({
@@ -1264,7 +1290,7 @@ async function handleClipObsidian(): Promise<void> {
 		// Gather content
 		const properties = getPropertiesFromDOM();
 
-		const frontmatter = await generateFrontmatter(properties);
+		const frontmatter = await generateMeta(properties);
 		const fileContent = frontmatter + noteContentField.value;
 
 		// Save to Obsidian
@@ -1332,7 +1358,7 @@ async function copyContent() {
 	const properties = getPropertiesFromDOM();
 
 	const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
-	const frontmatter = await generateFrontmatter(properties);
+	const frontmatter = await generateMeta(properties);
 	const fileContent = frontmatter + noteContentField.value;
 	await copyToClipboard(fileContent);
 }

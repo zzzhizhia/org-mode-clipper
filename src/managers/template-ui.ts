@@ -257,6 +257,11 @@ export function showTemplateEditor(template: Template | null): void {
 		vaultSelect.value = editingTemplate.vault || '';
 	}
 
+	const outputFormatSelect = document.getElementById('template-output-format') as HTMLSelectElement;
+	if (outputFormatSelect) {
+		outputFormatSelect.value = editingTemplate.outputFormat || 'md';
+	}
+
 	updateUrl('templates', editingTemplate.id);
 	updatePromptContextVisibility();
 }
@@ -543,6 +548,9 @@ export function updateTemplateFromForm(): void {
 
 	const vaultSelect = document.getElementById('template-vault') as HTMLSelectElement;
 	if (vaultSelect) template.vault = vaultSelect.value || undefined;
+
+	const outputFormatSelect = document.getElementById('template-output-format') as HTMLSelectElement;
+	if (outputFormatSelect) template.outputFormat = (outputFormatSelect.value as 'md' | 'org') || undefined;
 
 	hasUnsavedChanges = true;
 }

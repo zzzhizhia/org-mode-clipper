@@ -132,6 +132,30 @@ export function createDefaultTemplate(): Template {
 	};
 }
 
+export function createDefaultOrgTemplate(): Template {
+	const mkId = () => Date.now().toString() + Math.random().toString(36).slice(2, 11);
+	return {
+		id: mkId(),
+		name: 'Org-mode Clipper',
+		behavior: 'create',
+		noteNameFormat: '{{title}}',
+		path: 'Clippings',
+		noteContentFormat: '#+FILETAGS: {{tags|org_tags}}\n\n{{content}}',
+		outputFormat: 'org',
+		context: "",
+		properties: [
+			{ id: mkId(), name: 'ID', value: '{{uuid}}' },
+			{ id: mkId(), name: 'title', value: '{{title}}' },
+			{ id: mkId(), name: 'source', value: '{{url}}' },
+			{ id: mkId(), name: 'author', value: '{{author}}' },
+			{ id: mkId(), name: 'published', value: '{{published}}' },
+			{ id: mkId(), name: 'created', value: '{{date}}' },
+			{ id: mkId(), name: 'description', value: '{{description}}' },
+		],
+		triggers: []
+	};
+}
+
 export function getEditingTemplateIndex(): number {
 	return editingTemplateIndex;
 }
