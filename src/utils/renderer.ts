@@ -27,7 +27,7 @@ import {
 import { applyFilterDirect as builtInApplyFilterDirect } from './filters';
 
 // Filter application function type for direct invocation (already-parsed filter name and params)
-type ApplyFilterDirectFn = (value: string, filterName: string, paramString: string | undefined, currentUrl: string) => string;
+type ApplyFilterDirectFn = (value: string, filterName: string, paramString: string | undefined, currentUrl: string, outputFormat?: string) => string;
 
 // Default filter implementation using the built-in filters
 const defaultApplyFilterDirect: ApplyFilterDirectFn = builtInApplyFilterDirect;
@@ -62,6 +62,9 @@ export interface RenderContext {
 
 	/** Custom applyFilterDirect implementation (optional, uses built-in if not provided) */
 	applyFilterDirect?: ApplyFilterDirectFn;
+
+	/** Output format for format-sensitive filters (optional, defaults to 'md') */
+	outputFormat?: string;
 }
 
 /**
@@ -675,7 +678,7 @@ async function evaluateFilter(expr: FilterExpression, state: RenderState): Promi
 
 	// Use direct filter invocation (optimized path - no re-parsing needed)
 	const applyFilterDirectFn = state.context.applyFilterDirect || defaultApplyFilterDirect;
-	return applyFilterDirectFn(stringValue, expr.name, paramString, state.context.currentUrl);
+	return applyFilterDirectFn(stringValue, expr.name, paramString, state.context.currentUrl, state.context.outputFormat);
 }
 
 function evaluateContains(left: any, right: any): boolean {

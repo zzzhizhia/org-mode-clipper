@@ -36,5 +36,14 @@ describe('wikilink filter', () => {
 	test('removes quotes from alias parameter', () => {
 		expect(wikilink('page', '"alias"')).toBe('[[page|alias]]');
 	});
+
+	// Org-mode format tests
+	test('creates org file link when outputFormat is org', () => {
+		expect(wikilink('page', undefined, 'org')).toBe('[[file:page]]');
+	});
+
+	test('creates org file link with description', () => {
+		expect(wikilink('page', 'alias', 'org')).toBe('[[file:page][alias]]');
+	});
 });
 

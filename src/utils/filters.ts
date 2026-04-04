@@ -53,6 +53,7 @@ import { unique } from './filters/unique';
 import { upper } from './filters/upper';
 import { wikilink } from './filters/wikilink';
 import { duration } from './filters/duration';
+import { org_tags } from './filters/org_tags';
 
 // ============================================================================
 // Filter Metadata for Validation
@@ -126,6 +127,7 @@ export const filterMetadata: Record<string, FilterMetadata> = {
 	unique: {},
 	upper: {},
 	wikilink: {},
+	org_tags: { example: 'org_tags' },
 };
 
 export const validFilterNames = new Set(Object.keys(filterMetadata));
@@ -182,7 +184,8 @@ export const filters: { [key: string]: FilterFunction } = {
 	unescape,
 	unique,
 	upper,
-	wikilink
+	wikilink,
+	org_tags
 };
 
 // Split individual filters
@@ -251,11 +254,36 @@ function parseFilterString(filterString: string): string[] {
  * @param currentUrl - Optional current URL for filters that need it
  * @returns The filtered value as a string
  */
+/**
+ * Prepare special-case filter parameters.
+ * Centralizes URL injection for markdown/fragment_link filters.
+ */
+function prepareFilterParams(
+	filterName: string,
+	paramString: string | undefined,
+	currentUrl?: string
+): string[] {
+	let params = paramString ? [paramString] : [];
+
+	// Special case for markdown filter: use currentUrl if no params provided
+	if (filterName === 'markdown' && !paramString && currentUrl) {
+		params = [currentUrl];
+	}
+
+	// Special case for fragment_link filter: append currentUrl
+	if (filterName === 'fragment_link' && currentUrl) {
+		params.push(currentUrl);
+	}
+
+	return params;
+}
+
 export function applyFilterDirect(
 	value: string | any[],
 	filterName: string,
 	paramString: string | undefined,
-	currentUrl?: string
+	currentUrl?: string,
+	outputFormat?: string
 ): string {
 	debugLog('Filters', 'applyFilterDirect called with:', { value, filterName, paramString, currentUrl });
 
@@ -269,21 +297,10 @@ export function applyFilterDirect(
 	// Convert the input to a string if it's not already
 	const stringInput = typeof value === 'string' ? value : JSON.stringify(value);
 
-	// Build params array for special case handling
-	let params = paramString ? [paramString] : [];
+	const params = prepareFilterParams(filterName, paramString, currentUrl);
 
-	// Special case for markdown filter: use currentUrl if no params provided
-	if (filterName === 'markdown' && !paramString && currentUrl) {
-		params = [currentUrl];
-	}
-
-	// Special case for fragment_link filter: append currentUrl
-	if (filterName === 'fragment_link' && currentUrl) {
-		params.push(currentUrl);
-	}
-
-	// Apply the filter
-	const output = filter(stringInput, params.join(':'));
+	// Apply the filter (pass outputFormat for format-sensitive filters)
+	const output = filter(stringInput, params.join(':'), outputFormat);
 
 	debugLog('Filters', `Filter ${filterName} output:`, output);
 
@@ -305,7 +322,7 @@ export function applyFilterDirect(
  * Used when filters are specified as a string like "filter1:arg|filter2".
  * For the optimized path with pre-parsed filters, use applyFilterDirect.
  */
-export function applyFilters(value: string | any[], filterString: string, currentUrl?: string): string {
+export function applyFilters(value: string | any[], filterString: string, currentUrl?: string, outputFormat?: string): string {
 	debugLog('Filters', 'applyFilters called with:', { value, filterString, currentUrl });
 
 	if (!filterString) {
@@ -322,8 +339,8 @@ export function applyFilters(value: string | any[], filterString: string, curren
 	// Reduce through all filter names, applying each filter sequentially
 	const result = filterNames.reduce((result, filterName) => {
 			// Parse the filter string into name and parameters
-			const [name, ...params] = parseFilterString(filterName);
-			debugLog('Filters', `Parsed filter: ${name}, Params:`, params);
+			const [name, ...rawParams] = parseFilterString(filterName);
+			debugLog('Filters', `Parsed filter: ${name}, Params:`, rawParams);
 
 			// Get the filter function from the filters object
 			const filter = filters[name];
@@ -331,18 +348,10 @@ export function applyFilters(value: string | any[], filterString: string, curren
 				// Convert the input to a string if it's not already
 				const stringInput = typeof result === 'string' ? result : JSON.stringify(result);
 
-				// Special case for markdown filter: use currentUrl if no params provided
-				if (name === 'markdown' && params.length === 0 && currentUrl) {
-					params.push(currentUrl);
-				}
-
-				// Special case for fragment filter: use currentUrl if no params provided
-				if (name === 'fragment_link' && currentUrl) {
-					params.push(currentUrl);
-				}
+				const params = prepareFilterParams(name, rawParams.join(':') || undefined, currentUrl);
 
 				// Apply the filter and get the output
-				const output = filter(stringInput, params.join(':'));
+				const output = filter(stringInput, params.join(':'), outputFormat);
 
 				debugLog('Filters', `Filter ${name} output:`, output);
 

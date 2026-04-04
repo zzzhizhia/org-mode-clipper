@@ -1,6 +1,6 @@
 import { escapeMarkdown } from '../string-utils';
 
-export const link = (str: string, param?: string): string => {
+export const link = (str: string, param?: string, outputFormat?: string): string => {
 	if (!str.trim()) {
 		return str;
 	}
@@ -17,15 +17,29 @@ export const link = (str: string, param?: string): string => {
 		return url.replace(/ /g, '%20');
 	};
 
+	const formatLink = (text: string, url: string): string => {
+		if (outputFormat === 'org') {
+			return `[[${url}][${text}]]`;
+		}
+		return `[${escapeMarkdown(text)}](${encodeUrl(escapeMarkdown(url))})`;
+	};
+
+	const formatUrlOnly = (url: string): string => {
+		if (outputFormat === 'org') {
+			return `[[${url}][${linkText}]]`;
+		}
+		return `[${linkText}](${encodeUrl(escapeMarkdown(url))})`;
+	};
+
 	try {
 		const data = JSON.parse(str);
-		
+
 		const processObject = (obj: any): string[] => {
 			return Object.entries(obj).map(([key, value]) => {
 				if (typeof value === 'object' && value !== null) {
 					return processObject(value);
 				}
-				return `[${escapeMarkdown(String(value))}](${encodeUrl(escapeMarkdown(key))})`;
+				return formatLink(String(value), key);
 			}).flat();
 		};
 
@@ -34,7 +48,7 @@ export const link = (str: string, param?: string): string => {
 				if (typeof item === 'object' && item !== null) {
 					return processObject(item);
 				}
-				return item ? `[${linkText}](${encodeUrl(escapeMarkdown(String(item)))})` : '';
+				return item ? formatUrlOnly(String(item)) : '';
 			});
 			return result.join('\n');
 		} else if (typeof data === 'object' && data !== null) {
@@ -42,7 +56,7 @@ export const link = (str: string, param?: string): string => {
 		}
 	} catch (error) {
 		// If parsing fails, treat it as a single URL string
-		return `[${linkText}](${encodeUrl(escapeMarkdown(str))})`;
+		return formatUrlOnly(str);
 	}
 
 	return str;

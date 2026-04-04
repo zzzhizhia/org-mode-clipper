@@ -1,5 +1,8 @@
-export const blockquote = (input: string | string[]): string => {
+export const blockquote = (input: string | string[], _param?: string, outputFormat?: string): string => {
 	const processBlockquote = (str: string, depth: number = 1): string => {
+		if (outputFormat === 'org') {
+			return `#+BEGIN_QUOTE\n${str}\n#+END_QUOTE`;
+		}
 		const prefix = '> '.repeat(depth);
 		return str.split('\n').map(line => `${prefix}${line}`).join('\n');
 	};
