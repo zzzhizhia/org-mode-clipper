@@ -1,13 +1,14 @@
-import { 
+import {
 	deleteTemplate,
 	duplicateTemplate,
-	findTemplateById, 
-	getEditingTemplateIndex, 
-	loadTemplates, 
-	saveTemplateSettings, 
+	findTemplateById,
+	getEditingTemplateIndex,
+	loadTemplates,
+	saveTemplateSettings,
 	templates,
 	cleanupTemplateStorage,
-	rebuildTemplateList
+	rebuildTemplateList,
+	createDefaultOrgTemplate
 } from '../managers/template-manager';
 import { updateTemplateList, showTemplateEditor, initializeAddPropertyButton, initializeTemplateValidation } from '../managers/template-ui';
 import { initializeGeneralSettings } from '../managers/general-settings';
@@ -155,6 +156,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 		if (newTemplateBtn) {
 			newTemplateBtn.addEventListener('click', () => {
 				showTemplateEditor(null);
+			});
+		}
+
+		const newOrgTemplateBtn = document.getElementById('new-org-template-btn');
+		if (newOrgTemplateBtn) {
+			newOrgTemplateBtn.addEventListener('click', () => {
+				const orgTemplate = createDefaultOrgTemplate();
+				templates.unshift(orgTemplate);
+				saveTemplateSettings().then(() => {
+					updateTemplateList();
+					showTemplateEditor(orgTemplate);
+				});
 			});
 		}
 
