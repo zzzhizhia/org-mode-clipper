@@ -115,7 +115,7 @@
 		"message": "Close"
 	},
 	"commandOpenClipper": {
-		"message": "Open Obsidian Clipper"
+		"message": "Open Org Mode Clipper"
 	},
 	"commandQuickClip": {
 		"message": "Quick clip"
@@ -274,7 +274,7 @@
 		"message": "Save content from the web in a private and durable format that you can access offline. The official browser extension for Obsidian."
 	},
 	"extensionName": {
-		"message": "Obsidian Web Clipper"
+		"message": "Org Mode Clipper"
 	},
 	"failedToCopyText": {
 		"message": "Failed to copy text"

@@ -1,10 +1,10 @@
 {
 	"manifest_version": 3,
 	"default_locale": "en",
-	"name": "Obsidian Web Clipper",
-	"homepage_url": "https://obsidian.md/",
-	"version": "1.3.0",
-	"description": "Save and highlight web pages in a private and durable format that you can access offline. The official extension for Obsidian.",
+	"name": "Org Mode Clipper",
+	"homepage_url": "https://github.com/zzzhizhia/org-mode-clipper",
+	"version": "0.1.0",
+	"description": "Clip web pages to Markdown or Org-mode. Highlight, extract, and save content in a durable format you own.",
 	"permissions": [
 		"activeTab",
 		"clipboardWrite",

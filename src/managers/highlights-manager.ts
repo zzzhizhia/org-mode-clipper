@@ -30,8 +30,8 @@ export async function exportHighlights(): Promise<void> {
 				try {
 					await navigator.share({
 						files: [new File([blob], fileName, { type: 'application/json' })],
-						title: 'Exported Obsidian Web Clipper Highlights',
-						text: 'Here are your exported highlights from Obsidian Web Clipper.'
+						title: 'Exported Org Mode Clipper Highlights',
+						text: 'Here are your exported highlights from Org Mode Clipper.'
 					});
 				} catch (error) {
 					console.error('Error sharing:', error);
