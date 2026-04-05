@@ -1,10 +1,14 @@
 import { OutputFormatter, OutputFormat } from './types';
 import { Property } from '../types/types';
-import { htmlToOrg } from 'html-to-org';
+import { domToOrg } from 'html-to-org';
 
 /**
  * Org-mode formatter — converts content to Org syntax
  * and metadata to property drawer format.
+ *
+ * Uses domToOrg() which accepts any DOM node, so it works in both
+ * browser (native DOMParser) and Node.js (linkedom) environments
+ * without bundling linkedom into browser extensions.
  *
  * Property drawer format:
  *   :PROPERTIES:
@@ -16,7 +20,10 @@ export const orgFormatter: OutputFormatter = {
   format: 'org' as OutputFormat,
 
   formatContent(html: string, url: string): string {
-    return htmlToOrg(html, url);
+    // Parse HTML using whatever DOMParser is available in the current environment
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return domToOrg(doc.body, url);
   },
 
   formatMeta(properties: Property[], propertyTypes: Record<string, string>): string {
