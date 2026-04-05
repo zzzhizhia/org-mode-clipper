@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"default_locale": "en",
 	"name": "Org Mode Clipper",
-	"homepage_url": "https://github.com/zzzhizhia/org-mode-clipper",
+	"homepage_url": "https://github.com/org-atelier/org-mode-clipper",
 	"version": "0.1.0",
 	"description": "Clip web pages to Markdown or Org-mode. Highlight, extract, and save content in a durable format you own.",
 	"permissions": [
