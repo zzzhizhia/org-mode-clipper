@@ -14,6 +14,16 @@ import { createAsyncResolver, createSelectorProcessor } from '../api';
 
 const FROZEN_DATE = new Date('2025-01-15T12:00:00Z');
 
+// Fix timezone so {{date}} output is deterministic across machines
+process.env.TZ = 'UTC';
+
+// Provide global DOM APIs needed by defuddle/full's turndown
+const _linkedom = parseHTML('<!DOCTYPE html><html><head></head><body></body></html>');
+(globalThis as any).document = _linkedom.document;
+(globalThis as any).DOMParser = class {
+	parseFromString(html: string) { return parseHTML(html).document; }
+};
+
 beforeAll(() => { vi.useFakeTimers({ now: FROZEN_DATE }); });
 afterAll(() => { vi.useRealTimers(); });
 

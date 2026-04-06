@@ -17,8 +17,11 @@ const polyfillBanner = `
   var _parseHTML = linkedom.parseHTML;
 
   var LP = function() {};
-  LP.prototype.parseFromString = function(html) {
-    return _parseHTML(html).document;
+  LP.prototype.parseFromString = function(html, mimeType) {
+    // Wrap fragment HTML in a full document so linkedom places content inside <body>
+    var needsWrap = mimeType === "text/html" && !/^\\s*<!doctype|^\\s*<html/i.test(html);
+    var input = needsWrap ? "<html><body>" + html + "</body></html>" : html;
+    return _parseHTML(input).document;
   };
 
   if (typeof globalThis.window === "undefined") globalThis.window = globalThis;
