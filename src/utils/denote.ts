@@ -50,24 +50,27 @@ export function denoteIdentifier(date: Date): string {
 
 /**
  * Slugify a title for the Denote TITLE field.
- * Lowercase, alphanumeric, dash-separated.
+ *
+ * Preserves Unicode letters and digits (including CJK, Cyrillic, etc.) but
+ * strips Latin diacritics via NFKD decomposition so "Café" becomes "cafe"
+ * while "你好 world" becomes "你好-world".
  */
 export function denoteSlug(input: string): string {
 	return (input || '')
 		.normalize('NFKD')
-		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/\p{M}+/gu, '')
 		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/[^\p{L}\p{N}]+/gu, '-')
 		.replace(/^-+|-+$/g, '');
 }
 
 /**
- * Slugify a tag: lowercase alphanumeric, no separators.
+ * Slugify a tag: lowercase, Unicode letters/digits only, no separators.
  */
 export function denoteSlugTag(input: string): string {
 	return (input || '')
 		.normalize('NFKD')
-		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/\p{M}+/gu, '')
 		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '');
+		.replace(/[^\p{L}\p{N}]+/gu, '');
 }

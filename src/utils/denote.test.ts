@@ -34,8 +34,20 @@ describe('denoteSlug', () => {
 		expect(denoteSlug('Café Résumé')).toBe('cafe-resume');
 	});
 
-	test('drops non-ascii', () => {
-		expect(denoteSlug('测试 test')).toBe('test');
+	test('preserves CJK letters', () => {
+		expect(denoteSlug('测试 test')).toBe('测试-test');
+	});
+
+	test('preserves CJK-only titles', () => {
+		expect(denoteSlug('你好世界')).toBe('你好世界');
+	});
+
+	test('mixes CJK and punctuation', () => {
+		expect(denoteSlug('如何用 Emacs？一个介绍')).toBe('如何用-emacs-一个介绍');
+	});
+
+	test('preserves Cyrillic letters', () => {
+		expect(denoteSlug('Привет мир')).toBe('привет-мир');
 	});
 
 	test('empty input returns empty', () => {
