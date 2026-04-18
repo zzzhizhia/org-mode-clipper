@@ -1,4 +1,3 @@
-import { handleDragStart, handleDragOver, handleDrop, handleDragEnd } from '../utils/drag-and-drop';
 import { initializeIcons } from '../icons/icons';
 import { getCommands } from '../utils/hotkeys';
 import { initializeToggles, updateToggleState, initializeSettingToggle } from '../utils/ui-utils';
@@ -16,6 +15,7 @@ import { getClipHistory } from '../utils/storage-utils';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { showModal, hideModal } from '../utils/modal-utils';
+import { hasFSAccess, pickSaveDirectory, listSaveDirectories, removeSaveDirectory } from '../utils/fs-access';
 
 dayjs.extend(weekOfYear);
 
@@ -26,20 +26,17 @@ const STORE_URLS = {
 	edge: 'https://microsoftedge.microsoft.com/addons/detail/obsidian-web-clipper/eigdjhmgnaaeaonimdklocfekkaanfme'
 };
 
-export function updateVaultList(): void {
+export async function updateVaultList(): Promise<void> {
 	const vaultList = document.getElementById('vault-list') as HTMLUListElement;
 	if (!vaultList) return;
 
-	// Clear existing vaults
-	vaultList.textContent = '';
-	generalSettings.vaults.forEach((vault, index) => {
-		const li = document.createElement('li');
-		li.dataset.index = index.toString();
-		li.draggable = true;
+	const names = await listSaveDirectories();
+	generalSettings.vaults = names;
+	saveSettings();
 
-		const dragHandle = createElementWithClass('div', 'drag-handle');
-		dragHandle.appendChild(createElementWithHTML('i', '', { 'data-lucide': 'grip-vertical' }));
-		li.appendChild(dragHandle);
+	vaultList.textContent = '';
+	names.forEach((vault) => {
+		const li = document.createElement('li');
 
 		const span = document.createElement('span');
 		span.textContent = vault;
@@ -51,30 +48,15 @@ export function updateVaultList(): void {
 		removeBtn.appendChild(createElementWithHTML('i', '', { 'data-lucide': 'trash-2' }));
 		li.appendChild(removeBtn);
 
-		li.addEventListener('dragstart', handleDragStart);
-		li.addEventListener('dragover', handleDragOver);
-		li.addEventListener('drop', handleDrop);
-		li.addEventListener('dragend', handleDragEnd);
-		removeBtn.addEventListener('click', (e) => {
+		removeBtn.addEventListener('click', async (e) => {
 			e.stopPropagation();
-			removeVault(index);
+			await removeSaveDirectory(vault);
+			await updateVaultList();
 		});
 		vaultList.appendChild(li);
 	});
 
 	initializeIcons(vaultList);
-}
-
-export function addVault(vault: string): void {
-	generalSettings.vaults.push(vault);
-	saveSettings();
-	updateVaultList();
-}
-
-export function removeVault(index: number): void {
-	generalSettings.vaults.splice(index, 1);
-	saveSettings();
-	updateVaultList();
 }
 
 export async function setShortcutInstructions() {
@@ -267,19 +249,25 @@ function initializeShowMoreActionsToggle(): void {
 }
 
 function initializeVaultInput(): void {
-	const vaultInput = document.getElementById('vault-input') as HTMLInputElement;
-	if (vaultInput) {
-		vaultInput.addEventListener('keypress', (e) => {
-			if (e.key === 'Enter') {
-				e.preventDefault();
-				const newVault = vaultInput.value.trim();
-				if (newVault) {
-					addVault(newVault);
-					vaultInput.value = '';
-				}
-			}
-		});
+	const addBtn = document.getElementById('add-save-directory-btn') as HTMLButtonElement | null;
+	if (!addBtn) return;
+
+	if (!hasFSAccess()) {
+		addBtn.disabled = true;
+		addBtn.title = getMessage('fsAccessUnavailable');
+		return;
 	}
+
+	addBtn.addEventListener('click', async () => {
+		try {
+			const name = await pickSaveDirectory();
+			if (name) {
+				await updateVaultList();
+			}
+		} catch (err) {
+			console.error('Failed to add save directory:', err);
+		}
+	});
 }
 
 async function initializeKeyboardShortcuts(): Promise<void> {

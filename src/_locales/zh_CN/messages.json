@@ -23,6 +23,12 @@
 	"addVaultPlaceholder": {
 		"message": "按回车键添加保存目录"
 	},
+	"addSaveDirectory": {
+		"message": "添加保存目录"
+	},
+	"fsAccessUnavailable": {
+		"message": "当前浏览器不支持文件系统访问 API。"
+	},
 	"advanced": {
 		"message": "高级"
 	},

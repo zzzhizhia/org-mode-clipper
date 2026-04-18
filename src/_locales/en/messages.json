@@ -23,6 +23,12 @@
 	"addVaultPlaceholder": {
 		"message": "Press enter to add a save directory"
 	},
+	"addSaveDirectory": {
+		"message": "Add save directory"
+	},
+	"fsAccessUnavailable": {
+		"message": "This browser does not support the File System Access API."
+	},
 	"advanced": {
 		"message": "Advanced"
 	},

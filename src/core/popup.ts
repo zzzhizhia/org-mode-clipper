@@ -21,6 +21,7 @@ import { translatePage, getMessage, setupLanguageAndDirection } from '../utils/i
 import { formatPropertyValue } from '../utils/shared';
 import { getFormatter } from '../formatters';
 import { denoteFilename } from '../utils/denote';
+import { hasFSAccess, listSaveDirectories, writeFileToSaveDirectory } from '../utils/fs-access';
 
 let loadedSettings: Settings;
 let currentTemplate: Template | null = null;
@@ -326,6 +327,37 @@ function setupEventListeners(_tabId: number) {
 
 	if (saveDownloadsButton) {
 		saveDownloadsButton.addEventListener('click', handleSaveToDownloads);
+	}
+
+	void populateVaultDropdown();
+}
+
+async function populateVaultDropdown(): Promise<void> {
+	const vaultContainer = document.getElementById('vault-container');
+	const vaultDropdown = document.getElementById('vault-select') as HTMLSelectElement | null;
+	if (!vaultContainer || !vaultDropdown) return;
+
+	if (!hasFSAccess()) {
+		vaultContainer.style.display = 'none';
+		return;
+	}
+
+	const names = await listSaveDirectories();
+	vaultDropdown.textContent = '';
+	names.forEach(name => {
+		const option = document.createElement('option');
+		option.value = name;
+		option.textContent = name;
+		vaultDropdown.appendChild(option);
+	});
+
+	if (names.length > 0) {
+		vaultContainer.style.display = 'block';
+		if (currentTemplate?.vault && names.includes(currentTemplate.vault)) {
+			vaultDropdown.value = currentTemplate.vault;
+		}
+	} else {
+		vaultContainer.style.display = 'none';
 	}
 }
 
@@ -685,8 +717,10 @@ async function handleSaveToDownloads() {
 	try {
 		const noteNameField = document.getElementById('note-name-field') as HTMLInputElement;
 		const pathField = document.getElementById('path-name-field') as HTMLInputElement;
+		const vaultDropdown = document.getElementById('vault-select') as HTMLSelectElement | null;
 		const title = noteNameField?.value || 'untitled';
 		const path = pathField?.value || '';
+		const selectedDir = (currentTemplate?.vault || vaultDropdown?.value || '').trim();
 
 		const properties = getPropertiesFromDOM();
 
@@ -696,16 +730,23 @@ async function handleSaveToDownloads() {
 
 		const fileName = denoteFilename({ title, tags: ['clip'], date: new Date() });
 
-		await saveFile({
-			content: fileContent,
-			fileName,
-			mimeType: 'text/plain',
-			tabId: currentTabId,
-			onError: () => showError('failedToSaveFile')
-		});
+		let wroteViaFS = false;
+		if (selectedDir && hasFSAccess()) {
+			wroteViaFS = await writeFileToSaveDirectory(selectedDir, fileName, fileContent);
+		}
+
+		if (!wroteViaFS) {
+			await saveFile({
+				content: fileContent,
+				fileName,
+				mimeType: 'text/plain',
+				tabId: currentTabId,
+				onError: () => showError('failedToSaveFile')
+			});
+		}
 
 		const tabInfo = await getCurrentTabInfo();
-		await incrementStat('saveFile', '', path, tabInfo.url, tabInfo.title);
+		await incrementStat('saveFile', selectedDir, path, tabInfo.url, tabInfo.title);
 
 		const moreDropdown = document.getElementById('more-dropdown');
 		if (moreDropdown) {
