@@ -190,6 +190,52 @@
 	#clip-btn {
 		flex: 1;
 		cursor: default;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+
+		.save-check {
+			width: 1.1em;
+			height: 1.1em;
+			stroke: currentColor;
+			stroke-width: 3;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			fill: none;
+		}
+
+		.save-check path {
+			stroke-dasharray: 24;
+			stroke-dashoffset: 24;
+		}
+
+		&.is-saved {
+			background-color: var(--color-green, #16a34a);
+			color: #fff;
+			animation: clipper-save-pulse 0.45s ease-out;
+
+			.save-check path {
+				animation: clipper-save-check 0.35s ease-out 0.05s forwards;
+			}
+		}
+	}
+
+	@keyframes clipper-save-pulse {
+		0%   { transform: scale(1); }
+		45%  { transform: scale(1.04); }
+		100% { transform: scale(1); }
+	}
+
+	@keyframes clipper-save-check {
+		to { stroke-dashoffset: 0; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#clip-btn.is-saved {
+			animation: none;
+			.save-check path { animation: none; stroke-dashoffset: 0; }
+		}
 	}
 	#clip-btn:focus ~ .menu-btn #more-btn {
 		box-shadow: none;

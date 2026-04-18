@@ -713,6 +713,46 @@ export async function copyToClipboard(content: string) {
 	}
 }
 
+/**
+ * Briefly swap the Save button into a checkmark + "Saved" state. The
+ * stroke-dashoffset animation on the inline SVG draws the checkmark; CSS
+ * handles the pulse. Reverts to the original label after 1400ms so the
+ * button remains usable for subsequent clips.
+ */
+function flashSavedState() {
+	const clipButton = document.getElementById('clip-btn');
+	if (!clipButton) return;
+
+	if (clipButton.dataset.originalLabel === undefined) {
+		clipButton.dataset.originalLabel = clipButton.textContent ?? '';
+	}
+
+	clipButton.textContent = '';
+
+	const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.setAttribute('viewBox', '0 0 24 24');
+	svg.setAttribute('class', 'save-check');
+	const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+	path.setAttribute('d', 'M5 12.5 L10 17.5 L19 7.5');
+	svg.appendChild(path);
+	clipButton.appendChild(svg);
+
+	const label = document.createElement('span');
+	label.textContent = getMessage('saved');
+	clipButton.appendChild(label);
+
+	clipButton.classList.remove('is-saved');
+	// Force reflow so the animation re-runs if the user saves twice quickly.
+	void (clipButton as HTMLElement).offsetWidth;
+	clipButton.classList.add('is-saved');
+
+	window.setTimeout(() => {
+		clipButton.classList.remove('is-saved');
+		clipButton.textContent = clipButton.dataset.originalLabel ?? getMessage('saveFile');
+		delete clipButton.dataset.originalLabel;
+	}, 1400);
+}
+
 async function handleSaveToDownloads() {
 	try {
 		const noteNameField = document.getElementById('note-name-field') as HTMLInputElement;
@@ -747,6 +787,8 @@ async function handleSaveToDownloads() {
 
 		const tabInfo = await getCurrentTabInfo();
 		await incrementStat('saveFile', selectedDir, path, tabInfo.url, tabInfo.title);
+
+		flashSavedState();
 
 		const moreDropdown = document.getElementById('more-dropdown');
 		if (moreDropdown) {

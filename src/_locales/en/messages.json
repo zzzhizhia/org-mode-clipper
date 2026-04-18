@@ -26,6 +26,9 @@
 	"addSaveDirectory": {
 		"message": "Add save directory"
 	},
+	"saved": {
+		"message": "Saved"
+	},
 	"fsAccessUnavailable": {
 		"message": "This browser does not support the File System Access API."
 	},

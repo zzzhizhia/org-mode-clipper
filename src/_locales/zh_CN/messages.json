@@ -26,6 +26,9 @@
 	"addSaveDirectory": {
 		"message": "添加保存目录"
 	},
+	"saved": {
+		"message": "已保存"
+	},
 	"fsAccessUnavailable": {
 		"message": "当前浏览器不支持文件系统访问 API。"
 	},
