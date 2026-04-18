@@ -178,10 +178,18 @@ export async function clip(options: ClipOptions): Promise<ClipResult> {
 
 	// Use pre-parsed document if provided, otherwise parse
 	const doc = parsedDocument ?? documentParser.parseFromString(html, 'text/html');
-	// Extract content with defuddle
-	// Cast through unknown: linkedom's Document is structurally compatible but not nominally typed as DOM Document
+	// Extract content with defuddle.
+	// parseAsync() triggers extractors that hit the network (e.g. the YouTube
+	// extractor fetches captions). Fall back to sync parse() on timeout so a
+	// hung request never blocks the clip.
+	// Cast through unknown: linkedom's Document is structurally compatible
+	// but not nominally typed as DOM Document.
 	const defuddle = new DefuddleClass(doc as unknown as Document, { url });
-	const defuddleResult = defuddle.parse();
+	const parseTimeout = new Promise<never>((_, reject) =>
+		setTimeout(() => reject(new Error('defuddle parseAsync timeout')), 8000)
+	);
+	const defuddleResult = await Promise.race([defuddle.parseAsync(), parseTimeout])
+		.catch(() => defuddle.parse());
 
 	// Convert content to org format
 	const formatter = getFormatter();
