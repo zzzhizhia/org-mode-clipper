@@ -209,14 +209,30 @@
 			stroke-dasharray: 24;
 			stroke-dashoffset: 24;
 		}
+	}
 
-		&.is-saved {
+	// Saved state — both the main button and the dropdown arrow turn green
+	// together so the whole action cluster visibly confirms success.
+	&.is-saved {
+		#clip-btn {
 			background-color: var(--color-green, #16a34a);
 			color: #fff;
 			animation: clipper-save-pulse 0.45s ease-out;
 
 			.save-check path {
 				animation: clipper-save-check 0.35s ease-out 0.05s forwards;
+			}
+		}
+
+		#more-btn {
+			background-color: var(--color-green, #16a34a);
+			color: #fff;
+			animation: clipper-save-pulse 0.45s ease-out;
+
+			@media (hover: hover) {
+				&:hover {
+					background-color: var(--color-green, #16a34a);
+				}
 			}
 		}
 	}
@@ -232,9 +248,13 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		#clip-btn.is-saved {
+		&.is-saved #clip-btn,
+		&.is-saved #more-btn {
 			animation: none;
-			.save-check path { animation: none; stroke-dashoffset: 0; }
+		}
+		&.is-saved #clip-btn .save-check path {
+			animation: none;
+			stroke-dashoffset: 0;
 		}
 	}
 	#clip-btn:focus ~ .menu-btn #more-btn {

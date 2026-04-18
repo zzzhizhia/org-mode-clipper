@@ -721,7 +721,8 @@ export async function copyToClipboard(content: string) {
  */
 function flashSavedState() {
 	const clipButton = document.getElementById('clip-btn');
-	if (!clipButton) return;
+	const actionButtons = document.getElementById('action-buttons');
+	if (!clipButton || !actionButtons) return;
 
 	if (clipButton.dataset.originalLabel === undefined) {
 		clipButton.dataset.originalLabel = clipButton.textContent ?? '';
@@ -741,13 +742,13 @@ function flashSavedState() {
 	label.textContent = getMessage('saved');
 	clipButton.appendChild(label);
 
-	clipButton.classList.remove('is-saved');
-	// Force reflow so the animation re-runs if the user saves twice quickly.
-	void (clipButton as HTMLElement).offsetWidth;
-	clipButton.classList.add('is-saved');
+	// Apply on the parent so the sibling dropdown arrow animates in sync.
+	actionButtons.classList.remove('is-saved');
+	void (actionButtons as HTMLElement).offsetWidth;
+	actionButtons.classList.add('is-saved');
 
 	window.setTimeout(() => {
-		clipButton.classList.remove('is-saved');
+		actionButtons.classList.remove('is-saved');
 		clipButton.textContent = clipButton.dataset.originalLabel ?? getMessage('saveFile');
 		delete clipButton.dataset.originalLabel;
 	}, 1400);
