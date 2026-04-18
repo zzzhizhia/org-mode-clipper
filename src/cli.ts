@@ -213,8 +213,7 @@ async function main(): Promise<void> {
 	});
 
 	if (args.outputDir) {
-		const tags = readTagsFromProperties(result.properties);
-		const filename = denoteFilename({ title: result.noteName, tags, date: new Date() });
+		const filename = denoteFilename({ title: result.noteName, tags: ['clip'], date: new Date() });
 		const outPath = path.join(path.resolve(args.outputDir), filename);
 		fs.writeFileSync(outPath, result.fullContent, 'utf-8');
 		console.error(`Written to ${outPath}`);
@@ -224,16 +223,6 @@ async function main(): Promise<void> {
 	} else {
 		process.stdout.write(result.fullContent);
 	}
-}
-
-function readTagsFromProperties(properties: { name: string; value: string }[]): string[] {
-	const tagsProp = properties.find(p => p.name.toLowerCase() === 'tags');
-	if (!tagsProp || !tagsProp.value) return [];
-	// Split on comma, whitespace, or both
-	return tagsProp.value
-		.split(/[,\s]+/)
-		.map(t => t.trim())
-		.filter(Boolean);
 }
 
 main().catch(err => {

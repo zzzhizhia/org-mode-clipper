@@ -681,11 +681,6 @@ export async function copyToClipboard(content: string) {
 	}
 }
 
-function parseTagsValue(value: string): string[] {
-	if (!value) return [];
-	return value.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
-}
-
 async function handleSaveToDownloads() {
 	try {
 		const noteNameField = document.getElementById('note-name-field') as HTMLInputElement;
@@ -694,14 +689,12 @@ async function handleSaveToDownloads() {
 		const path = pathField?.value || '';
 
 		const properties = getPropertiesFromDOM();
-		const tagsProp = properties.find(p => p.name.toLowerCase() === 'tags');
-		const tags = parseTagsValue(tagsProp?.value || '');
 
 		const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
 		const frontmatter = generateOrgMeta(properties);
 		const fileContent = frontmatter + noteContentField.value;
 
-		const fileName = denoteFilename({ title, tags, date: new Date() });
+		const fileName = denoteFilename({ title, tags: ['clip'], date: new Date() });
 
 		await saveFile({
 			content: fileContent,
