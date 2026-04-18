@@ -2,51 +2,29 @@ import { describe, test, expect } from 'vitest';
 import { link } from './link';
 
 describe('link filter', () => {
-	test('converts string to markdown link', () => {
-		expect(link('https://example.com', 'Example')).toBe('[Example](https://example.com)');
+	test('converts string to org link', () => {
+		expect(link('https://example.com', 'Example'))
+			.toBe('[[https://example.com][Example]]');
 	});
 
 	test('handles URL without link text', () => {
 		const result = link('https://example.com');
-		expect(result).toContain('https://example.com');
+		expect(result).toBe('[[https://example.com][link]]');
 	});
 
 	test('handles array of URLs', () => {
 		const result = link('["url1","url2"]', 'Link');
-		expect(result).toContain('[Link](url1)');
-		expect(result).toContain('[Link](url2)');
+		expect(result).toContain('[[url1][Link]]');
+		expect(result).toContain('[[url2][Link]]');
 	});
 
 	test('handles object with link text values', () => {
 		const result = link('{"url1": "Link 1", "url2": "Link 2"}');
-		expect(result).toContain('[Link 1](url1)');
-		expect(result).toContain('[Link 2](url2)');
+		expect(result).toContain('[[url1][Link 1]]');
+		expect(result).toContain('[[url2][Link 2]]');
 	});
 
 	test('handles empty string', () => {
 		expect(link('')).toBe('');
 	});
-
-	test('escapes special markdown characters', () => {
-		const result = link('https://example.com', 'Test [link]');
-		expect(result).toContain('Test');
-	});
-
-	// Org-mode format tests
-	test('converts to org link when outputFormat is org', () => {
-		expect(link('https://example.com', 'Example', 'org'))
-			.toBe('[[https://example.com][Example]]');
-	});
-
-	test('converts array URLs to org links', () => {
-		const result = link('["url1","url2"]', 'Link', 'org');
-		expect(result).toContain('[[url1][Link]]');
-		expect(result).toContain('[[url2][Link]]');
-	});
-
-	test('converts object to org links', () => {
-		const result = link('{"url1": "Link 1"}', undefined, 'org');
-		expect(result).toContain('[[url1][Link 1]]');
-	});
 });
-

@@ -1,4 +1,4 @@
-import { Template, Property, PropertyType } from '../types/types';
+import { Template, PropertyType } from '../types/types';
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 import browser from '../utils/browser-polyfill';
 import { generalSettings } from '../utils/storage-utils';
@@ -141,7 +141,6 @@ export function createDefaultOrgTemplate(): Template {
 		noteNameFormat: '{{title}}',
 		path: 'Clippings',
 		noteContentFormat: '#+FILETAGS: {{tags|org_tags}}\n\n{{content}}',
-		outputFormat: 'org',
 		context: "",
 		properties: [
 			{ id: mkId(), name: 'ID', value: '{{uuid}}' },

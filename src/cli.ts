@@ -2,7 +2,7 @@
 // banner in scripts/build-cli.mjs. They must run before any bundled module code.
 import { parseHTML } from 'linkedom';
 import { clip, matchTemplate, DocumentParser } from './api';
-import { openInObsidian } from './utils/cli-utils';
+import { denoteFilename } from './utils/denote';
 import { Template } from './types/types';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -15,30 +15,23 @@ interface CliArgs {
 	url: string;
 	templatePath: string;
 	outputPath?: string;
-	vault?: string;
-	open: boolean;
-	silent: boolean;
-	uri: boolean;
+	outputDir?: string;
 	propertyTypesPath?: string;
 	htmlPath?: string;
-	format?: string;
 }
 
 function printUsage(): void {
 	const usage = `
-Usage: obsidian-clipper <url> [options]
+Usage: org-clipper <url> [options]
 
 Options:
   -t, --template <path>        Path to template JSON file or directory (required)
                                If a directory, auto-matches template by URL triggers
-  -o, --output <path>          Output .md file path (default: stdout)
+  -o, --output <path>          Output file path (default: stdout)
+  -d, --output-dir <path>      Output directory; filename is auto-generated using
+                               Denote naming (YYYYMMDDTHHMMSS--slug__tags.org)
       --html <path>            Read HTML from file instead of fetching URL (use - for stdin)
-      --vault <name>           Obsidian vault name
-      --open                   Send to Obsidian instead of writing file
-      --uri                    Use URI scheme instead of Obsidian CLI
-      --silent                 Suppress Obsidian focus (URI mode)
       --property-types <path>  JSON mapping property names to types
-      --format <format>          Force output format (md, org). Overrides template setting
   -h, --help                   Show this help message
 `.trim();
 	console.log(usage);
@@ -49,13 +42,9 @@ function parseArgs(argv: string[]): CliArgs {
 	let url = '';
 	let templatePath = '';
 	let outputPath: string | undefined;
-	let vault: string | undefined;
-	let open = false;
-	let silent = false;
-	let uri = false;
+	let outputDir: string | undefined;
 	let propertyTypesPath: string | undefined;
 	let htmlPath: string | undefined;
-	let format: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -64,7 +53,6 @@ function parseArgs(argv: string[]): CliArgs {
 			case '--help':
 				printUsage();
 				process.exit(0);
-				break;
 			case '-t':
 			case '--template':
 				if (i + 1 >= args.length) { console.error('Error: --template requires a value'); process.exit(1); }
@@ -75,18 +63,10 @@ function parseArgs(argv: string[]): CliArgs {
 				if (i + 1 >= args.length) { console.error('Error: --output requires a value'); process.exit(1); }
 				outputPath = args[++i];
 				break;
-			case '--vault':
-				if (i + 1 >= args.length) { console.error('Error: --vault requires a value'); process.exit(1); }
-				vault = args[++i];
-				break;
-			case '--open':
-				open = true;
-				break;
-			case '--silent':
-				silent = true;
-				break;
-			case '--uri':
-				uri = true;
+			case '-d':
+			case '--output-dir':
+				if (i + 1 >= args.length) { console.error('Error: --output-dir requires a value'); process.exit(1); }
+				outputDir = args[++i];
 				break;
 			case '--html':
 				if (i + 1 >= args.length) { console.error('Error: --html requires a value'); process.exit(1); }
@@ -95,10 +75,6 @@ function parseArgs(argv: string[]): CliArgs {
 			case '--property-types':
 				if (i + 1 >= args.length) { console.error('Error: --property-types requires a value'); process.exit(1); }
 				propertyTypesPath = args[++i];
-				break;
-			case '--format':
-				if (i + 1 >= args.length) { console.error('Error: --format requires a value'); process.exit(1); }
-				format = args[++i];
 				break;
 			default:
 				if (!arg.startsWith('-') && !url) {
@@ -123,7 +99,7 @@ function parseArgs(argv: string[]): CliArgs {
 		process.exit(1);
 	}
 
-	return { url, templatePath, outputPath, vault, open, silent, uri, propertyTypesPath, htmlPath, format };
+	return { url, templatePath, outputPath, outputDir, propertyTypesPath, htmlPath };
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +136,6 @@ const linkedomParser: DocumentParser = {
 async function main(): Promise<void> {
 	const args = parseArgs(process.argv);
 
-	// Determine if template path is a file or directory
 	const resolvedTemplatePath = path.resolve(args.templatePath);
 	const isDir = fs.statSync(resolvedTemplatePath).isDirectory();
 	let templates: Template[] | undefined;
@@ -177,18 +152,16 @@ async function main(): Promise<void> {
 		template = JSON.parse(templateRaw);
 	}
 
-	// Load optional property types
 	let propertyTypes: Record<string, string> | undefined;
 	if (args.propertyTypesPath) {
 		const raw = fs.readFileSync(path.resolve(args.propertyTypesPath), 'utf-8');
 		propertyTypes = JSON.parse(raw);
 	}
 
-	// Get HTML: from file/stdin (--html) or by fetching URL
 	let html: string;
 	if (args.htmlPath) {
 		if (args.htmlPath === '-') {
-			html = fs.readFileSync(0, 'utf-8'); // stdin
+			html = fs.readFileSync(0, 'utf-8');
 		} else {
 			html = fs.readFileSync(path.resolve(args.htmlPath), 'utf-8');
 		}
@@ -201,14 +174,10 @@ async function main(): Promise<void> {
 		html = await response.text();
 	}
 
-	// If using a template directory, match template by triggers.
-	// Try URL triggers first (no parsing needed). Only parse for schema if required.
 	let parsedDocument: any;
 	if (templates) {
-		// First try URL-only matching (no HTML parsing needed)
 		let matched = matchTemplate(templates, args.url);
 
-		// If no URL match, check if any templates have schema triggers
 		if (!matched) {
 			const hasSchemaTrigs = templates.some(t => t.triggers?.some(tr => tr.startsWith('schema:')));
 			if (hasSchemaTrigs) {
@@ -234,12 +203,6 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
-	// Apply --format override if provided
-	if (args.format) {
-		template.outputFormat = args.format as 'md' | 'org';
-	}
-
-	// Call the API (reuse pre-parsed document if available)
 	const result = await clip({
 		html,
 		url: args.url,
@@ -249,25 +212,28 @@ async function main(): Promise<void> {
 		parsedDocument,
 	});
 
-	// Output
-	if (args.open) {
-		const vault = args.vault || template.vault || '';
-		const obsResult = await openInObsidian(
-			result.fullContent,
-			result.noteName,
-			template.path || '',
-			vault,
-			template.behavior || 'create',
-			args.silent,
-			args.uri
-		);
-		console.error(obsResult);
+	if (args.outputDir) {
+		const tags = readTagsFromProperties(result.properties);
+		const filename = denoteFilename({ title: result.noteName, tags, date: new Date() });
+		const outPath = path.join(path.resolve(args.outputDir), filename);
+		fs.writeFileSync(outPath, result.fullContent, 'utf-8');
+		console.error(`Written to ${outPath}`);
 	} else if (args.outputPath) {
 		fs.writeFileSync(path.resolve(args.outputPath), result.fullContent, 'utf-8');
 		console.error(`Written to ${args.outputPath}`);
 	} else {
 		process.stdout.write(result.fullContent);
 	}
+}
+
+function readTagsFromProperties(properties: { name: string; value: string }[]): string[] {
+	const tagsProp = properties.find(p => p.name.toLowerCase() === 'tags');
+	if (!tagsProp || !tagsProp.value) return [];
+	// Split on comma, whitespace, or both
+	return tagsProp.value
+		.split(/[,\s]+/)
+		.map(t => t.trim())
+		.filter(Boolean);
 }
 
 main().catch(err => {

@@ -6,24 +6,22 @@ import { applyFilters } from '../filters';
 describe('callout filter', () => {
 	test('creates default info callout', () => {
 		const result = callout('content');
-		expect(result).toContain('[!info]');
-		expect(result).toContain('content');
+		expect(result).toBe('#+BEGIN_INFO\ncontent\n#+END_INFO');
 	});
 
 	test('creates callout with custom type', () => {
 		const result = callout('content', 'warning');
-		expect(result).toContain('[!warning]');
+		expect(result).toBe('#+BEGIN_WARNING\ncontent\n#+END_WARNING');
 	});
 
 	test('creates callout with title', () => {
 		const result = callout('content', '("note", "My Title")');
-		expect(result).toContain('[!note]');
-		expect(result).toContain('My Title');
+		expect(result).toBe('#+BEGIN_NOTE My Title\ncontent\n#+END_NOTE');
 	});
 
 	test('handles empty content', () => {
 		const result = callout('');
-		expect(result).toContain('[!info]');
+		expect(result).toBe('#+BEGIN_INFO\n\n#+END_INFO');
 	});
 
 	test('handles multiline content', () => {
@@ -40,12 +38,11 @@ describe('callout filter via renderer', () => {
 		applyFilters,
 	});
 
-	test('callout with type, title, and fold state through template', async () => {
+	test('callout with type and title through template', async () => {
 		const ctx = createContext({ msg: 'content' });
-		const result = await render('{{msg|callout:("info","My Title",true)}}', ctx);
+		const result = await render('{{msg|callout:("info","My Title")}}', ctx);
 		expect(result.errors).toHaveLength(0);
-		expect(result.output).toContain('[!info]-');
-		expect(result.output).toContain('My Title');
+		expect(result.output).toContain('#+BEGIN_INFO My Title');
 		expect(result.output).toContain('content');
 	});
 
@@ -53,16 +50,6 @@ describe('callout filter via renderer', () => {
 		const ctx = createContext({ msg: 'content' });
 		const result = await render('{{msg|callout:"warning"}}', ctx);
 		expect(result.errors).toHaveLength(0);
-		expect(result.output).toContain('[!warning]');
-	});
-
-	test('prompt string literal with callout filter is reconstructed correctly', async () => {
-		const ctx = createContext();
-		const result = await render('{{"prompt text"|callout:("info","Summary",false)}}', ctx);
-		// Prompt expressions are deferred (reconstructed as template syntax)
-		// The reconstructed template must preserve the parenthesized argument format
-		expect(result.output).not.toContain('[!"info":"Summary":false]');
-		expect(result.output).toContain('|callout:("info","Summary",false)');
+		expect(result.output).toContain('#+BEGIN_WARNING');
 	});
 });
-

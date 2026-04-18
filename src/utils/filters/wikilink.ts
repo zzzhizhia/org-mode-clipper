@@ -1,22 +1,16 @@
-export const wikilink = (str: string, param?: string, outputFormat?: string): string => {
+export const wikilink = (str: string, param?: string): string => {
 	if (!str.trim()) {
 		return str;
 	}
 
 	let alias = '';
 	if (param) {
-		// Remove outer parentheses if present
 		param = param.replace(/^\((.*)\)$/, '$1');
-		// Remove surrounding quotes (both single and double)
 		alias = param.replace(/^(['"])([\s\S]*)\1$/, '$2');
 	}
 
-	const formatWikilink = (target: string, display?: string): string => {
-		if (outputFormat === 'org') {
-			return display ? `[[file:${target}][${display}]]` : `[[file:${target}]]`;
-		}
-		return display ? `[[${target}|${display}]]` : `[[${target}]]`;
-	};
+	const formatWikilink = (target: string, display?: string): string =>
+		display ? `[[file:${target}][${display}]]` : `[[file:${target}]]`;
 
 	try {
 		const data = JSON.parse(str);
@@ -42,7 +36,6 @@ export const wikilink = (str: string, param?: string, outputFormat?: string): st
 			return JSON.stringify(processObject(data));
 		}
 	} catch (error) {
-		// If parsing fails, treat it as a single string
 		return formatWikilink(str, alias || undefined);
 	}
 	return str;

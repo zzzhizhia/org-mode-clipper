@@ -183,8 +183,8 @@ export async function clip(options: ClipOptions): Promise<ClipResult> {
 	const defuddle = new DefuddleClass(doc as unknown as Document, { url });
 	const defuddleResult = defuddle.parse();
 
-	// Convert content to target format
-	const formatter = getFormatter(template.outputFormat);
+	// Convert content to org format
+	const formatter = getFormatter();
 	const formattedContent = formatter.formatContent(defuddleResult.content, url);
 
 	// Build template variables

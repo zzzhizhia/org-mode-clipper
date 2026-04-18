@@ -9,8 +9,6 @@ export interface Template {
 	triggers?: string[];
 	vault?: string;
 	context?: string;
-	/** Output format: 'md' for Markdown (default), 'org' for Org-mode */
-	outputFormat?: 'md' | 'org';
 }
 
 export interface Property {
@@ -24,7 +22,7 @@ export interface ExtractedContent {
 	[key: string]: string;
 }
 
-export type FilterFunction = (value: string, param?: string, outputFormat?: string) => string | any[];
+export type FilterFunction = (value: string, param?: string) => string | any[];
 
 export interface PromptVariable {
 	key: string;

@@ -3,14 +3,14 @@ import { Property } from '../types/types';
 /**
  * Output format identifier.
  */
-export type OutputFormat = 'md' | 'org';
+export type OutputFormat = 'org';
 
 /**
  * Interface for converting extracted HTML content and metadata
- * into a specific output format (Markdown, Org-mode, etc.).
+ * into a specific output format.
  */
 export interface OutputFormatter {
-  /** File extension without dot (e.g. 'md', 'org') */
+  /** File extension without dot */
   readonly fileExtension: string;
 
   /** Format identifier */
@@ -27,7 +27,6 @@ export interface OutputFormatter {
 
   /**
    * Serialize properties into the format's metadata block.
-   * For Markdown: YAML frontmatter. For Org: property drawer.
    *
    * @param properties - Compiled property list
    * @param propertyTypes - Map of property name → type

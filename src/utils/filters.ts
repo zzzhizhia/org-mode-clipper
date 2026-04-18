@@ -23,7 +23,6 @@ import { link } from './filters/link';
 import { length } from './filters/length';
 import { lower } from './filters/lower';
 import { map, validateMapParams } from './filters/map';
-import { markdown } from './filters/markdown';
 import { merge } from './filters/merge';
 import { nth, validateNthParams } from './filters/nth';
 import { number_format } from './filters/number_format';
@@ -100,7 +99,6 @@ export const filterMetadata: Record<string, FilterMetadata> = {
 	link: {},
 	list: { example: 'list:numbered', validateParams: validateListParams },
 	lower: {},
-	markdown: {},
 	merge: {},
 	nth: { example: 'nth:2', validateParams: validateNthParams },
 	number_format: {},
@@ -155,7 +153,6 @@ export const filters: { [key: string]: FilterFunction } = {
 	list,
 	lower,
 	map,
-	markdown,
 	merge,
 	number_format,
 	nth,
@@ -263,12 +260,7 @@ function prepareFilterParams(
 	paramString: string | undefined,
 	currentUrl?: string
 ): string[] {
-	let params = paramString ? [paramString] : [];
-
-	// Special case for markdown filter: use currentUrl if no params provided
-	if (filterName === 'markdown' && !paramString && currentUrl) {
-		params = [currentUrl];
-	}
+	const params = paramString ? [paramString] : [];
 
 	// Special case for fragment_link filter: append currentUrl
 	if (filterName === 'fragment_link' && currentUrl) {
@@ -282,8 +274,7 @@ export function applyFilterDirect(
 	value: string | any[],
 	filterName: string,
 	paramString: string | undefined,
-	currentUrl?: string,
-	outputFormat?: string
+	currentUrl?: string
 ): string {
 	debugLog('Filters', 'applyFilterDirect called with:', { value, filterName, paramString, currentUrl });
 
@@ -299,8 +290,7 @@ export function applyFilterDirect(
 
 	const params = prepareFilterParams(filterName, paramString, currentUrl);
 
-	// Apply the filter (pass outputFormat for format-sensitive filters)
-	const output = filter(stringInput, params.join(':'), outputFormat);
+	const output = filter(stringInput, params.join(':'));
 
 	debugLog('Filters', `Filter ${filterName} output:`, output);
 
@@ -322,7 +312,7 @@ export function applyFilterDirect(
  * Used when filters are specified as a string like "filter1:arg|filter2".
  * For the optimized path with pre-parsed filters, use applyFilterDirect.
  */
-export function applyFilters(value: string | any[], filterString: string, currentUrl?: string, outputFormat?: string): string {
+export function applyFilters(value: string | any[], filterString: string, currentUrl?: string): string {
 	debugLog('Filters', 'applyFilters called with:', { value, filterString, currentUrl });
 
 	if (!filterString) {
@@ -351,7 +341,7 @@ export function applyFilters(value: string | any[], filterString: string, curren
 				const params = prepareFilterParams(name, rawParams.join(':') || undefined, currentUrl);
 
 				// Apply the filter and get the output
-				const output = filter(stringInput, params.join(':'), outputFormat);
+				const output = filter(stringInput, params.join(':'));
 
 				debugLog('Filters', `Filter ${name} output:`, output);
 

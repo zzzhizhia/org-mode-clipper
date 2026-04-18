@@ -1,18 +1,13 @@
-export const blockquote = (input: string | string[], _param?: string, outputFormat?: string): string => {
-	const processBlockquote = (str: string, depth: number = 1): string => {
-		if (outputFormat === 'org') {
-			return `#+BEGIN_QUOTE\n${str}\n#+END_QUOTE`;
-		}
-		const prefix = '> '.repeat(depth);
-		return str.split('\n').map(line => `${prefix}${line}`).join('\n');
-	};
+export const blockquote = (input: string | string[]): string => {
+	const processBlockquote = (str: string): string =>
+		`#+BEGIN_QUOTE\n${str}\n#+END_QUOTE`;
 
-	const processArray = (arr: any[], depth: number = 1): string => {
+	const processArray = (arr: any[]): string => {
 		return arr.map(item => {
 			if (Array.isArray(item)) {
-				return processArray(item, depth + 1);
+				return processArray(item);
 			}
-			return processBlockquote(String(item), depth);
+			return processBlockquote(String(item));
 		}).join('\n');
 	};
 
@@ -21,14 +16,11 @@ export const blockquote = (input: string | string[], _param?: string, outputForm
 		if (Array.isArray(parsedInput)) {
 			return processArray(parsedInput);
 		}
-		// If it's an object, stringify it first
 		if (typeof parsedInput === 'object' && parsedInput !== null) {
 			return processBlockquote(JSON.stringify(parsedInput, null, 2));
 		}
-		// If it's a single value, treat it as a string
 		return processBlockquote(String(parsedInput));
 	} catch (error) {
-		// If parsing fails, treat it as a single string or array of strings
 		if (Array.isArray(input)) {
 			return processArray(input);
 		}

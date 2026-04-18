@@ -31,5 +31,14 @@ describe('date filter', () => {
 		const result = date('');
 		expect(result).toBe('');
 	});
-});
 
+	test('no param uses org timestamp format', () => {
+		const result = date('2024-12-01');
+		expect(result).toMatch(/^<2024-12-01 \w{3}>$/);
+	});
+
+	test('org format alias', () => {
+		const result = date('2024-12-01', 'org');
+		expect(result).toMatch(/^<2024-12-01 \w{3}>$/);
+	});
+});
